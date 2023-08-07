@@ -175,7 +175,7 @@ constexpr void checkTypeSupport() {
 template<typename T>
 Array<T> convolve2_base(const Array<T> &signal, const Array<T> &filter,
                         const dim4 &stride, const dim4 &padding,
-                        const dim4 &dilation) {
+                        const dim4 &dilation, const af_batch_type batch_type) {
     dim4 sDims = signal.dims();
     dim4 fDims = filter.dims();
 
@@ -193,41 +193,69 @@ Array<T> convolve2_base(const Array<T> &signal, const Array<T> &filter,
 
     unwrapped  = reorder(unwrapped, dim4(1, 2, 0, 3));
     dim4 uDims = unwrapped.dims();
-    unwrapped =
-        modDims(unwrapped, dim4(uDims[0] * uDims[1], uDims[2] * uDims[3]));
-
-    Array<T> collapsedFilter = filter;
-
+	
+	Array<T> collapsedFilter = filter;
     collapsedFilter = flip(collapsedFilter, {1, 1, 0, 0});
-    collapsedFilter = modDims(collapsedFilter,
-                              dim4(fDims[0] * fDims[1] * fDims[2], fDims[3]));
+	
+	
+	if(batch_type == AF_BATCH_ONE_ONE) {
+		unwrapped =
+			modDims(unwrapped, dim4(uDims[0] * uDims[1], uDims[2], 1, uDims[3]));
+    
+		collapsedFilter = modDims(collapsedFilter,
+								  dim4(fDims[0] * fDims[1] * fDims[2], 1, fDims[3]));
 
-    T alpha        = scalar<T>(1.0);
-    T beta         = scalar<T>(0.0);
-    const int Mdim = 1;
-    const int Ndim = 1;
-    Array<T> res   = createEmptyArray<T>(
-        dim4(unwrapped.dims()[Mdim], collapsedFilter.dims()[Ndim],
-               unwrapped.dims()[2], unwrapped.dims()[3]));
-    gemm(res, AF_MAT_TRANS, AF_MAT_NONE, &alpha, unwrapped, collapsedFilter,
-         &beta);
-    res = modDims(res, dim4(outputWidth, outputHeight, signal.dims()[3],
-                            collapsedFilter.dims()[1]));
-    Array<T> out = reorder(res, dim4(0, 1, 3, 2));
+		T alpha        = scalar<T>(1.0);
+		T beta         = scalar<T>(0.0);
+		const int Mdim = 1;
+		const int Ndim = 1;
+		Array<T> res   = createEmptyArray<T>(
+			dim4(unwrapped.dims()[Mdim], collapsedFilter.dims()[Ndim],
+				   unwrapped.dims()[2], unwrapped.dims()[3]));
+		
+		gemm(res, AF_MAT_TRANS, AF_MAT_NONE, &alpha, unwrapped, collapsedFilter,
+			 &beta);
+		
+		res = modDims(res, dim4(outputWidth, outputHeight, 1, signal.dims()[3]));
 
-    return out;
+		return res;
+	}
+	else {
+		unwrapped =
+			modDims(unwrapped, dim4(uDims[0] * uDims[1], uDims[2] * uDims[3]));
+    
+		collapsedFilter = modDims(collapsedFilter,
+								  dim4(fDims[0] * fDims[1] * fDims[2], fDims[3]));
+
+		T alpha        = scalar<T>(1.0);
+		T beta         = scalar<T>(0.0);
+		const int Mdim = 1;
+		const int Ndim = 1;
+		Array<T> res   = createEmptyArray<T>(
+			dim4(unwrapped.dims()[Mdim], collapsedFilter.dims()[Ndim],
+				   unwrapped.dims()[2], unwrapped.dims()[3]));
+		gemm(res, AF_MAT_TRANS, AF_MAT_NONE, &alpha, unwrapped, collapsedFilter,
+			 &beta);
+		res = modDims(res, dim4(outputWidth, outputHeight, signal.dims()[3],
+								collapsedFilter.dims()[1]));
+		Array<T> out = reorder(res, dim4(0, 1, 3, 2));
+
+		return out;
+	}
 }
 
 template<typename T>
 Array<T> convolve2(Array<T> const &signal, Array<T> const &filter,
-                   const dim4 stride, const dim4 padding, const dim4 dilation) {
+                   const dim4 stride, const dim4 padding, const dim4 dilation, 
+				   const af_batch_type batch_type) {
 #ifdef WITH_CUDNN
-    if (getCudnnPlugin().isLoaded()) {
+	//TODO: Does CUDNN support one to one batching?
+    if (getCudnnPlugin().isLoaded() && batch_type != AF_BATCH_ONE_ONE) {
         checkTypeSupport<T>();
         return convolve2_cudnn<T>(signal, filter, stride, padding, dilation);
     }
 #endif
-    return convolve2_base<T>(signal, filter, stride, padding, dilation);
+    return convolve2_base<T>(signal, filter, stride, padding, dilation, batch_type);
 }
 
 #define INSTANTIATE(T)                                                        \
