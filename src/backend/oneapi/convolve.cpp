@@ -124,26 +124,40 @@ Array<T> convolve2_unwrap(const Array<T> &signal, const Array<T> &filter,
     Array<T> unwrapped =
         unwrap(signal, fDims[0], fDims[1], stride[0], stride[1], padding[0],
                padding[1], dilation[0], dilation[1], retCols);
-
+	
     unwrapped  = reorder(unwrapped, dim4(1, 2, 0, 3));
     dim4 uDims = unwrapped.dims();
-
-    unwrapped =
-        modDims(unwrapped, dim4(uDims[0] * uDims[1], uDims[2] * uDims[3]));
-
-    Array<T> collapsedFilter = filter;
-
-    collapsedFilter = flip(collapsedFilter, {1, 1, 0, 0});
-    collapsedFilter = modDims(collapsedFilter,
-                              dim4(fDims[0] * fDims[1] * fDims[2], fDims[3]));
+	
+	Array<T> collapsedFilter = flip(filter, {1, 1, 0, 0});
+	
+	if(batch_type == AF_BATCH_ONE_ONE) {
+		unwrapped =
+			modDims(unwrapped, dim4(uDims[0] * uDims[1], uDims[2], 1, uDims[3]));
+		collapsedFilter          = modDims(collapsedFilter,
+                                       dim4(fDims[0] * fDims[1] * fDims[2], 1, 1, fDims[3]));
+	}
+	else {
+		unwrapped =
+			modDims(unwrapped, dim4(uDims[0] * uDims[1], uDims[2] * uDims[3]));
+		collapsedFilter          = modDims(collapsedFilter,
+                                       dim4(fDims[0] * fDims[1] * fDims[2], fDims[3]));
+	}
 
     Array<T> res =
         matmul(unwrapped, collapsedFilter, AF_MAT_TRANS, AF_MAT_NONE);
-    res = modDims(res, dim4(outputWidth, outputHeight, signal.dims()[3],
+	
+	if(batch_type == AF_BATCH_ONE_ONE) {
+		res = modDims(res, dim4(outputWidth, outputHeight, 1, signal.dims()[3]));
+		// No second batch dimension, return as-is
+		return res;
+	}
+	else {
+		res = modDims(res, dim4(outputWidth, outputHeight, signal.dims()[3],
                             collapsedFilter.dims()[1]));
-    Array<T> out = reorder(res, dim4(0, 1, 3, 2));
+		Array<T> out = reorder(res, dim4(0, 1, 3, 2));
 
-    return out;
+		return out;
+	}
 }
 
 template<typename T>
