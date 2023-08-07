@@ -109,7 +109,7 @@ INSTANTIATE(intl, float)
 template<typename T>
 Array<T> convolve2_unwrap(const Array<T> &signal, const Array<T> &filter,
                           const dim4 &stride, const dim4 &padding,
-                          const dim4 &dilation) {
+                          const dim4 &dilation, const af_batch_type batch_type) {
     dim4 sDims = signal.dims();
     dim4 fDims = filter.dims();
 
@@ -148,16 +148,16 @@ Array<T> convolve2_unwrap(const Array<T> &signal, const Array<T> &filter,
 
 template<typename T>
 Array<T> convolve2(Array<T> const &signal, Array<T> const &filter,
-                   const dim4 stride, const dim4 padding, const dim4 dilation) {
+                   const dim4 stride, const dim4 padding, const dim4 dilation, const af_batch_type batch_type) {
     Array<T> out =
-        convolve2_unwrap<T>(signal, filter, stride, padding, dilation);
+        convolve2_unwrap<T>(signal, filter, stride, padding, dilation, batch_type);
     return out;
 }
 
 #define INSTANTIATE(T)                                                        \
     template Array<T> convolve2<T>(Array<T> const &signal,                    \
                                    Array<T> const &filter, const dim4 stride, \
-                                   const dim4 padding, const dim4 dilation);
+                                   const dim4 padding, const dim4 dilation, const af_batch_type batch_type);
 
 INSTANTIATE(double)
 INSTANTIATE(float)

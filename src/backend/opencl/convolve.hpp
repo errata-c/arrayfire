@@ -22,7 +22,8 @@ Array<T> convolve2(Array<T> const &signal, Array<accT> const &c_filter,
 
 template<typename T>
 Array<T> convolve2(Array<T> const &signal, Array<T> const &filter,
-                   const dim4 stride, const dim4 padding, const dim4 dilation);
+                   const dim4 stride, const dim4 padding, const dim4 dilation,
+				   const af_batch_type batch_type);
 
 template<typename T>
 Array<T> conv2DataGradient(const Array<T> &incoming_gradient,

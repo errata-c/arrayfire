@@ -182,6 +182,16 @@ af_err af_convolve2_nn(af_array *out, const af_array signal,
          padding_dims, paddings, dilation_dims, dilations);
 }
 
+af_err af_convolve2_nn_v2(af_array *out, const af_array signal,
+                       const af_array filter, const unsigned stride_dims,
+                       const dim_t *strides, const unsigned padding_dims,
+                       const dim_t *paddings, const unsigned dilation_dims,
+                       const dim_t *dilations, const af_batch_type batch_type) {
+    CHECK_ARRAYS(signal, filter);
+    CALL(af_convolve2_nn_v2, out, signal, filter, stride_dims, strides,
+         padding_dims, paddings, dilation_dims, dilations, batch_type);
+}
+
 af_err af_convolve2_gradient_nn(
     af_array *out, const af_array incoming_gradient,
     const af_array original_signal, const af_array original_filter,

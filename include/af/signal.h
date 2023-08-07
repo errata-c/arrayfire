@@ -606,6 +606,7 @@ AFAPI array convolve2(const array& signal, const array& filter, const convMode m
    \param[in]  stride   specifies the filter strides along each dimension
    \param[in]  padding  specifies the padding along each dimension
    \param[in]  dilation specifies the amount to dilate the filter before convolution
+   \param[in]  batching specifies the kind of batching to perform
    \return              the convolved array
 
    \note Make sure you pass in both dim0, and dim1 in your dim4 arguments. The third
@@ -614,7 +615,7 @@ AFAPI array convolve2(const array& signal, const array& filter, const convMode m
    \ingroup signal_func_convolve2
  */
 AFAPI array convolve2NN(const array& signal, const array& filter,
-                        const dim4 stride, const dim4 padding, const dim4 dilation);
+                        const dim4 stride, const dim4 padding, const dim4 dilation, const af_batch_type batching = AF_BATCH_DETECT);
 
 /**
    C++ Interface for convolution on three dimensional signals
@@ -1441,6 +1442,36 @@ AFAPI af_err af_convolve2_nn(af_array *out, const af_array signal, const af_arra
                              const unsigned stride_dims,   const dim_t *strides,
                              const unsigned padding_dims,  const dim_t *paddings,
                              const unsigned dilation_dims, const dim_t *dilations);
+
+/**
+   C Interface for 2D convolution
+
+   This version of convolution is consistent with the machine learning
+   formulation that will spatially convolve a filter on 2-dimensions against a
+   signal. The resulting dimensions from this operation depend on the kind of 
+   batching selected.
+
+   \param[out] out is convolved array
+   \param[in]  signal is the input signal
+   \param[in]  filter is the filter that will be used for the convolution operation
+   \param[in]  stride_dims specifies the number of stride dimension parameters
+   \param[in]  strides array of values specifying the amounts the filter strides along each dimension
+   \param[in]  padding_dims specifies the number of padding dimension parameters
+   \param[in]  paddings array of values specifying the amounts to pad along each dimension
+   \param[in]  dilation_dims specifies the number of dilation dimension parameters
+   \param[in]  dilations array of values specifying the amounts to dilate the filter
+               before convolving along each dimension
+   \param[in]  batch_type specifies the desired kind of batching to perform
+   \return     \ref AF_SUCCESS if the convolution is successful,
+               otherwise an appropriate error code is returned.
+
+   \ingroup signal_func_convolve2
+ */
+AFAPI af_err af_convolve2_nn_v2(af_array *out, const af_array signal, const af_array filter,
+                             const unsigned stride_dims,   const dim_t *strides,
+                             const unsigned padding_dims,  const dim_t *paddings,
+                             const unsigned dilation_dims, const dim_t *dilations,
+							 const af_batch_type batch_type);
 
 /**
    C Interface for convolution on three dimensional signals

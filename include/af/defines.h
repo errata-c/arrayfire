@@ -317,6 +317,14 @@ typedef enum {
 } af_conv_domain;
 
 typedef enum {
+	AF_BATCH_DETECT,  ///< ArrayFire detects what kind of batching to perform based on the dimensions of the input arrays
+	AF_BATCH_ONE_ONE, ///< Perform one-to-one batching, the batch dimensions must match
+	AF_BATCH_ALL_ALL, ///< Perform all-to-all batching
+	AF_BATCH_ONE_ALL, ///< Perform one-to-all batching
+	AF_BATCH_ALL_ONE  ///< Perform all-to-one batching
+} af_batch_type;
+
+typedef enum {
     AF_SAD = 0,   ///< Match based on Sum of Absolute Differences (SAD)
     AF_ZSAD,      ///< Match based on Zero mean SAD
     AF_LSAD,      ///< Match based on Locally scaled SAD

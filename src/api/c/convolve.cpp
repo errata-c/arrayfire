@@ -327,9 +327,9 @@ af_err af_convolve2_sep(af_array *out, const af_array col_filter,
 template<typename T>
 inline af_array convolve2Strided(const af_array &s, const af_array &f,
                                  const dim4 stride, const dim4 padding,
-                                 const dim4 dilation) {
+                                 const dim4 dilation, const af_batch_type batch_type = AF_BATCH_DETECT) {
     return getHandle(convolve2<T>(getArray<T>(s), getArray<T>(f), stride,
-                                  padding, dilation));
+                                  padding, dilation, batch_type));
 }
 
 af_err af_convolve2_nn(af_array *out, const af_array signal,
@@ -373,6 +373,63 @@ af_err af_convolve2_nn(af_array *out, const af_array signal,
             case f16:
                 output = convolve2Strided<half>(signal, filter, stride, padding,
                                                 dilation);
+                break;
+            default: TYPE_ERROR(1, signalType);
+        }
+        std::swap(*out, output);
+    }
+    CATCHALL;
+    return AF_SUCCESS;
+}
+
+af_err af_convolve2_nn_v2(af_array *out, const af_array signal,
+                       const af_array filter, const unsigned stride_dims,
+                       const dim_t *strides, const unsigned padding_dims,
+                       const dim_t *paddings, const unsigned dilation_dims,
+                       const dim_t *dilations, const af_batch_type batch_type) {
+    try {
+        const ArrayInfo &sInfo = getInfo(signal);
+        const ArrayInfo &fInfo = getInfo(filter);
+
+        af::dim4 sDims = sInfo.dims();
+        af::dim4 fDims = fInfo.dims();
+
+        const af_dtype signalType = sInfo.getType();
+
+        dim4 stride(stride_dims, strides);
+        dim4 padding(padding_dims, paddings);
+        dim4 dilation(dilation_dims, dilations);
+
+        size_t stride_ndims   = stride.ndims();
+        size_t padding_ndims  = padding.ndims();
+        size_t dilation_ndims = dilation.ndims();
+        ARG_ASSERT(3, stride_ndims > 0 && stride_ndims <= 2);
+        ARG_ASSERT(5, padding_ndims >= 0 && padding_ndims <= 2);
+        ARG_ASSERT(7, dilation_ndims > 0 && dilation_ndims <= 2);
+
+        // assert number of features matches between signal and filter
+        DIM_ASSERT(1, sDims[2] == fDims[2]);
+		
+		//TODO: Support these?
+		ARG_ASSERT(8, batch_type != AF_BATCH_ALL_ONE && batch_type != AF_BATCH_ONE_ALL);
+		
+		if(batch_type == AF_BATCH_ONE_ONE) {
+			DIM_ASSERT(1, sDims[3] == fDims[3]);
+		}
+
+        af_array output;
+        switch (signalType) {
+            case f32:
+                output = convolve2Strided<float>(signal, filter, stride,
+                                                 padding, dilation, batch_type);
+                break;
+            case f64:
+                output = convolve2Strided<double>(signal, filter, stride,
+                                                  padding, dilation, batch_type);
+                break;
+            case f16:
+                output = convolve2Strided<half>(signal, filter, stride, padding,
+                                                dilation, batch_type);
                 break;
             default: TYPE_ERROR(1, signalType);
         }

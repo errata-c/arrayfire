@@ -56,10 +56,11 @@ array convolve2NN(
     const array &signal, const array &filter,
     const dim4 stride,      // NOLINT(performance-unnecessary-value-param)
     const dim4 padding,     // NOLINT(performance-unnecessary-value-param)
-    const dim4 dilation) {  // NOLINT(performance-unnecessary-value-param)
+    const dim4 dilation,    // NOLINT(performance-unnecessary-value-param)
+	const af_batch_type batch_type) {
     af_array out = 0;
-    AF_THROW(af_convolve2_nn(&out, signal.get(), filter.get(), 2, stride.get(),
-                             2, padding.get(), 2, dilation.get()));
+    AF_THROW(af_convolve2_nn_v2(&out, signal.get(), filter.get(), 2, stride.get(),
+                             2, padding.get(), 2, dilation.get(), batch_type));
     return array(out);
 }
 
