@@ -40,7 +40,9 @@ elseif(NOT TARGET GTest::gtest)
   target_compile_options(gtest
     PRIVATE
       $<$<BOOL:${has_cxx_fp_model}>:-fp-model precise>)
-  add_library(GTest::gtest ALIAS gtest)
+  if(NOT TARGET GTest::gtest)
+    add_library(GTest::gtest ALIAS gtest)
+  endif()
   # Hide gtest project variables
   mark_as_advanced(
     BUILD_SHARED_LIBS
@@ -379,8 +381,9 @@ if(CUDA_FOUND)
       add_executable(${target} cuda.cu)
       target_include_directories(${target}
         PRIVATE
-          ${CMAKE_SOURCE_DIR}
-          ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR})
+      target_include_directories(${target}
         SYSTEM PRIVATE
           ${ArrayFire_SOURCE_DIR}/extern/half/include)
       if(${backend} STREQUAL "unified")

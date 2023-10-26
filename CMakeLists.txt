@@ -5,14 +5,17 @@
 # The complete license agreement can be obtained at:
 # http://arrayfire.com/licenses/BSD-3-Clause
 
-cmake_minimum_required(VERSION 3.10.2)
+if(AF_BUILD_ONEAPI)
+  cmake_minimum_required(VERSION 3.20)
+else()
+  cmake_minimum_required(VERSION 3.16.3)
+endif()
 include(CheckLanguage)
 
 include(CMakeModules/AF_vcpkg_options.cmake)
 
-project(ArrayFire VERSION 3.9.0 LANGUAGES C CXX)
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
+project(ArrayFire VERSION 3.9.0 LANGUAGES C CXX)
 
 include(AFconfigure_deps_vars)
 include(AFBuildConfigurations)
@@ -44,10 +47,11 @@ option(AF_WITH_EXTERNAL_PACKAGES_ONLY "Build ArrayFire with External packages on
 if(AF_WITH_EXTERNAL_PACKAGES_ONLY)
   set(AF_REQUIRED REQUIRED)
 endif()
-
-get_filename_component(CXX_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
-if(CXX_COMPILER_NAME STREQUAL "dpcpp" OR CXX_COMPILER_NAME STREQUAL "dpcpp.exe"
-   OR CXX_COMPILER_NAME STREQUAL "icpx" OR CXX_COMPILER_NAME STREQUAL "icx.exe")
+if(CMAKE_SYCL_COMPILER)
+  get_filename_component(SYCL_COMPILER_NAME ${CMAKE_SYCL_COMPILER} NAME)
+endif()
+if(SYCL_COMPILER_NAME STREQUAL "dpcpp" OR SYCL_COMPILER_NAME STREQUAL "dpcpp.exe"
+   OR SYCL_COMPILER_NAME STREQUAL "icpx" OR SYCL_COMPILER_NAME STREQUAL "icx.exe")
   set(MKL_THREAD_LAYER "TBB" CACHE STRING "The thread layer to choose for MKL")
   set(MKL_INTERFACE "ilp64")
   set(MKL_INTERFACE_INTEGER_SIZE 8)
@@ -134,6 +138,9 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
   if(DEFINED ENV{MKLROOT} AND NOT DEFINED MKL_ROOT)
     set(MKL_ROOT "$ENV{MKLROOT}")
   endif()
+  set(DPCPP_COMPILER ON)
+  set(MKL_THREADING "tbb_thread")
+  set(MKL_INTERFACE "ilp64")
   find_package(MKL 2023.1)
 endif()
 
@@ -272,6 +279,7 @@ else()
   if(AF_WITH_SPDLOG_HEADER_ONLY)
     set_target_properties(af_spdlog
       PROPERTIES
+        INTERFACE_COMPILE_DEFINITIONS "FMT_HEADER_ONLY=1"
         INTERFACE_LINK_LIBRARIES "spdlog_header_only")
   else()
     target_compile_options(spdlog

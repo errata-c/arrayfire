@@ -41,6 +41,13 @@ using af::dim4;
 template<typename T>
 class Array;
 
+/// Checks if the Array object can be migrated to the current device and if not,
+/// an error is thrown
+///
+/// \param[in] arr The Array that will be checked.
+template<typename T>
+void checkAndMigrate(Array<T> &arr);
+
 template<typename T>
 void evalMultiple(std::vector<Array<T> *> arrays);
 
@@ -323,6 +330,7 @@ class Array {
     friend void destroyArray<T>(Array<T> *arr);
     friend void *getDevicePtr<T>(const Array<T> &arr);
     friend void *getRawPtr<T>(const Array<T> &arr);
+    friend void checkAndMigrate<T>(Array<T> &arr);
 };
 
 }  // namespace opencl
